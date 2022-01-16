@@ -63,6 +63,11 @@ func TestCache(t *testing.T) {
 			require.False(t, ok)
 			require.Nil(t, value)
 		}
+
+		c.Set("five", 5)
+		five, ok := c.Get("five")
+		require.True(t, ok)
+		require.Equal(t, five, 5)
 	})
 }
 
