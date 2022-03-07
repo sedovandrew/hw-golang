@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# For test.sh
 
 echo -e "HELLO is (${HELLO})
 BAR is (${BAR})
