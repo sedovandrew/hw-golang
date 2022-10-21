@@ -1,9 +1,9 @@
 package hw10programoptimization
 
 import (
+	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -26,20 +26,19 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 type users [100_000]User
 
 func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
+	var (
+		i    int
+		user User
+	)
+	bs := bufio.NewScanner(r)
+	for bs.Scan() {
+		if err = json.Unmarshal(bs.Bytes(), &user); err != nil {
 			return
 		}
 		result[i] = user
+		i++
 	}
-	return
+	return result, bs.Err()
 }
 
 func countDomains(u users, domain string) (DomainStat, error) {
