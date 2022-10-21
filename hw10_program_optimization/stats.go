@@ -1,11 +1,12 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 type User struct {
