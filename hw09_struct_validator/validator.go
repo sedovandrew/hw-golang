@@ -35,7 +35,7 @@ func Validate(v interface{}) error {
 	// Check if not struct
 	rValue := reflect.ValueOf(v)
 	if rValue.Kind() != reflect.Struct {
-		return NonStructCheckError
+		return ErrNonStructCheck
 	}
 
 	// Init validation queue
@@ -59,10 +59,11 @@ func Validate(v interface{}) error {
 	return nil
 }
 
-// ValidateItem validates an item from the queue
+// ValidateItem validates an item from the queue.
 func ValidateItem(queue *ValidationQueue, vErrors *ValidationErrors) error {
 	validationItemReflectValue := queue.Pop()
 
+	//nolint:exhaustive
 	switch validationItemReflectValue.rValue.Kind() {
 	case reflect.Struct:
 		isValidateStruct, err := IsValidateStruct(validationItemReflectValue)
@@ -114,8 +115,7 @@ func IsValidateStruct(reflectStruct ValidationItem) (bool, error) {
 		return false, err
 	}
 	for _, check := range checks {
-		switch check.name {
-		case validateNested:
+		if check.name == validateNested {
 			return true, nil
 		}
 	}
@@ -135,12 +135,12 @@ func ValidateString(reflectString ValidationItem, vErrors *ValidationErrors) err
 		case validateLen:
 			lengthString, err := strconv.Atoi(check.value)
 			if err != nil {
-				return LengthCheckError
+				return ErrLengthCheck
 			}
 			if lengthString != len(stringValue) {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectString.rStructField.Name,
-					LengthValidationError,
+					ErrLengthValidation,
 				})
 			}
 		case validateIn:
@@ -148,22 +148,22 @@ func ValidateString(reflectString ValidationItem, vErrors *ValidationErrors) err
 			if !stringInSlice(stringValue, allowedValues) {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectString.rStructField.Name,
-					InValidationError,
+					ErrInValidation,
 				})
 			}
 		case validateRegexp:
 			regexpPattern, err := regexp.Compile(check.value)
 			if err != nil {
-				return RegexpCheckError
+				return ErrRegexpCheck
 			}
 			if !regexpPattern.MatchString(stringValue) {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectString.rStructField.Name,
-					RegexpValidationError,
+					ErrRegexpValidation,
 				})
 			}
 		default:
-			return UnknownCheckError
+			return ErrUnknownCheck
 		}
 	}
 
@@ -186,33 +186,33 @@ func ValidateInt(reflectInt ValidationItem, vErrors *ValidationErrors) error {
 			if !stringInSlice(stringValue, allowedValues) {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectInt.rStructField.Name,
-					InValidationError,
+					ErrInValidation,
 				})
 			}
 		case validateMin:
 			min, err := strconv.ParseInt(check.value, 10, 64)
 			if err != nil {
-				return MinCheckError
+				return ErrMinCheck
 			}
 			if intValue < min {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectInt.rStructField.Name,
-					MinValidationError,
+					ErrMinValidation,
 				})
 			}
 		case validateMax:
 			max, err := strconv.ParseInt(check.value, 10, 64)
 			if err != nil {
-				return MaxCheckError
+				return ErrMaxCheck
 			}
 			if intValue > max {
 				*vErrors = append(*vErrors, ValidationError{
 					reflectInt.rStructField.Name,
-					MaxValidationError,
+					ErrMaxValidation,
 				})
 			}
 		default:
-			return UnknownCheckError
+			return ErrUnknownCheck
 		}
 	}
 	return nil

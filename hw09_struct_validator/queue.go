@@ -22,13 +22,13 @@ type ValidationItem struct {
 	root         bool
 }
 
-// checks returns a list of validations
+// checks returns a list of validations.
 func (vi ValidationItem) checks() ([]checkType, error) {
 	t, ok := vi.rStructField.Tag.Lookup(validationTagName)
 	if !ok {
 		return []checkType{}, nil
 	}
-	var checks []checkType
+	checks := []checkType{}
 	rawChecks := strings.Split(t, checkSplitSeparator)
 
 	for _, rawCheck := range rawChecks {
@@ -49,7 +49,7 @@ func parseCheck(rawCheck string) (checkType, error) {
 		return checkType{name: nameValueCheck[0]}, nil
 	}
 	if len(nameValueCheck) != 2 {
-		return checkType{}, ParseCheckError
+		return checkType{}, ErrParseCheck
 	}
 	return checkType{nameValueCheck[0], nameValueCheck[1]}, nil
 }

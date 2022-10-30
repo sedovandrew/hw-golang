@@ -2,6 +2,7 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -63,6 +64,7 @@ type (
 	}
 )
 
+//nolint:funlen
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		in          interface{}
@@ -80,7 +82,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: ValidationErrors{
 				ValidationError{
 					"Version",
-					LengthValidationError,
+					ErrLengthValidation,
 				},
 			},
 		},
@@ -103,7 +105,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: ValidationErrors{
 				ValidationError{
 					"Code",
-					InValidationError,
+					ErrInValidation,
 				},
 			},
 		},
@@ -117,6 +119,7 @@ func TestValidate(t *testing.T) {
 				Email:  "alex@example.com",
 				Role:   "stuff",
 				Phones: []string{"79261234567", "79031234567"},
+				meta:   []byte{},
 			},
 			expectedErr: nil,
 		},
@@ -125,7 +128,7 @@ func TestValidate(t *testing.T) {
 		{
 			in: House{
 				Owners: []User{
-					User{
+					{
 						ID:     "ddae45b6-a0f6-4b9d-b97c-b4b54bc9f5e7",
 						Name:   "Fred",
 						Age:    30,
@@ -146,7 +149,7 @@ func TestValidate(t *testing.T) {
 		{
 			in: House{
 				Owners: []User{
-					User{
+					{
 						ID:     "123",
 						Name:   "Eva",
 						Age:    17,
@@ -154,7 +157,7 @@ func TestValidate(t *testing.T) {
 						Role:   "student",
 						Phones: []string{"eva123", "12345678901", "eva"},
 					},
-					User{
+					{
 						ID:     "1a80203e-b925-4b7d-af4e-76e38ac1e676",
 						Name:   "Adam",
 						Age:    81,
@@ -172,67 +175,67 @@ func TestValidate(t *testing.T) {
 				// House Country
 				ValidationError{
 					"Country",
-					RegexpValidationError,
+					ErrRegexpValidation,
 				},
 				// House City
 				ValidationError{
 					"City",
-					RegexpValidationError,
+					ErrRegexpValidation,
 				},
 				// House Street
 				ValidationError{
 					"Street",
-					RegexpValidationError,
+					ErrRegexpValidation,
 				},
 				// House Number
 				ValidationError{
 					"Number",
-					MinValidationError,
+					ErrMinValidation,
 				},
 				// Eva ID len
 				ValidationError{
 					"ID",
-					LengthValidationError,
+					ErrLengthValidation,
 				},
 				// Eva ID regexp
 				ValidationError{
 					"ID",
-					RegexpValidationError,
+					ErrRegexpValidation,
 				},
 				// Eva Age
 				ValidationError{
 					"Age",
-					MinValidationError,
+					ErrMinValidation,
 				},
 				// Eva Email
 				ValidationError{
 					"Email",
-					RegexpValidationError,
+					ErrRegexpValidation,
 				},
 				// Eva Role
 				ValidationError{
 					"Role",
-					InValidationError,
+					ErrInValidation,
 				},
 				// Adam Age
 				ValidationError{
 					"Age",
-					MaxValidationError,
+					ErrMaxValidation,
 				},
 				// Adam Role
 				ValidationError{
 					"Role",
-					InValidationError,
+					ErrInValidation,
 				},
 				// Eva first phone
 				ValidationError{
 					"Phones",
-					LengthValidationError,
+					ErrLengthValidation,
 				},
 				// Eva third phone
 				ValidationError{
 					"Phones",
-					LengthValidationError,
+					ErrLengthValidation,
 				},
 			},
 		},
@@ -242,7 +245,7 @@ func TestValidate(t *testing.T) {
 			in: WrongRegexp{
 				Field: "one,two,three",
 			},
-			expectedErr: RegexpCheckError,
+			expectedErr: ErrRegexpCheck,
 		},
 
 		// case_8: Unknown validate
@@ -250,7 +253,7 @@ func TestValidate(t *testing.T) {
 			in: UnknownValidate{
 				Name: "Yes",
 			},
-			expectedErr: UnknownCheckError,
+			expectedErr: ErrUnknownCheck,
 		},
 
 		// case_9: A non-public field should not be validated.
@@ -266,13 +269,13 @@ func TestValidate(t *testing.T) {
 			in: ValidationValueNotSet{
 				NotValue: 9,
 			},
-			expectedErr: ParseCheckError,
+			expectedErr: ErrParseCheck,
 		},
 
 		// case_11: Not structure.
 		{
 			in:          555,
-			expectedErr: NonStructCheckError,
+			expectedErr: ErrNonStructCheck,
 		},
 	}
 
@@ -286,10 +289,10 @@ func TestValidate(t *testing.T) {
 			if tt.expectedErr == nil {
 				require.Nil(t, err)
 			} else {
-				if errs, ok := tt.expectedErr.(ValidationErrors); ok {
-					vErr, ok := err.(ValidationErrors)
-					require.True(t, ok)
-					require.Error(t, vErr)
+				var errs ValidationErrors
+				if errors.As(tt.expectedErr, &errs) {
+					var vErr ValidationErrors
+					require.ErrorAs(t, err, &vErr)
 					for i, e := range vErr {
 						require.Lessf(t, i, len(errs), "The nubmer of errors returned is greater than required")
 						require.Equal(t, e.Field, errs[i].Field)

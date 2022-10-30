@@ -1,19 +1,19 @@
 package hw09structvalidator
 
-import "fmt"
+import "errors"
 
 var (
-	LengthValidationError = fmt.Errorf("The value does not match the specified length")
-	InValidationError     = fmt.Errorf("The value is not allowed")
-	MinValidationError    = fmt.Errorf("The value is less then the minimum")
-	MaxValidationError    = fmt.Errorf("The value is greater then the maximum")
-	RegexpValidationError = fmt.Errorf("The value does not match the regular expression")
+	ErrLengthValidation = errors.New("the value does not match the specified length")
+	ErrInValidation     = errors.New("the value is not allowed")
+	ErrMinValidation    = errors.New("the value is less then the minimum")
+	ErrMaxValidation    = errors.New("the value is greater then the maximum")
+	ErrRegexpValidation = errors.New("the value does not match the regular expression")
 
-	NonStructCheckError = fmt.Errorf("The input data is not a structure")
-	UnknownCheckError   = fmt.Errorf("Unknown validation error")
-	ParseCheckError     = fmt.Errorf("Validation parsing error")
-	LengthCheckError    = fmt.Errorf("Length validation error")
-	MinCheckError       = fmt.Errorf("Minimum validation error")
-	MaxCheckError       = fmt.Errorf("Maximum validation error")
-	RegexpCheckError    = fmt.Errorf("Regexp validation error")
+	ErrNonStructCheck = errors.New("the input data is not a structure")
+	ErrUnknownCheck   = errors.New("unknown validation error")
+	ErrParseCheck     = errors.New("validation parsing error")
+	ErrLengthCheck    = errors.New("length validation error")
+	ErrMinCheck       = errors.New("minimum validation error")
+	ErrMaxCheck       = errors.New("maximum validation error")
+	ErrRegexpCheck    = errors.New("regexp validation error")
 )
