@@ -1,6 +1,7 @@
 package hw09structvalidator
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -25,7 +26,12 @@ type ValidationError struct {
 type ValidationErrors []ValidationError
 
 func (v ValidationErrors) Error() string {
-	return "Found validation errors"
+	b := strings.Builder{}
+	b.WriteString("Found validation errors:\n")
+	for _, e := range v {
+		b.WriteString(fmt.Sprintf("- in field %q: %q\n", e.Field, e.Err))
+	}
+	return b.String()
 }
 
 // Validate - validate the structure recursively.
