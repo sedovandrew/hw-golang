@@ -67,4 +67,77 @@ func TestRun(t *testing.T) {
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
+
+	t.Run("fewer tasks then workers", func(t *testing.T) {
+		tasksCount := 10
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+		var sumTime time.Duration
+
+		for i := 0; i < tasksCount; i++ {
+			taskSleep := time.Millisecond * time.Duration(rand.Intn(100))
+			sumTime += taskSleep
+
+			tasks = append(tasks, func() error {
+				time.Sleep(taskSleep)
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		workersCount := 15
+		maxErrorsCount := 1
+
+		start := time.Now()
+		err := Run(tasks, workersCount, maxErrorsCount)
+		elapsedTime := time.Since(start)
+		require.NoError(t, err)
+
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
+		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
+	})
+
+	t.Run("comparison of single-threaded and multi-threaded mode", func(t *testing.T) {
+		tasksCount := 10
+		tasks := make([]Task, 0, tasksCount)
+
+		var sumTime time.Duration
+
+		for i := 0; i < tasksCount; i++ {
+			taskSleep := time.Millisecond * time.Duration(rand.Intn(100))
+			sumTime += taskSleep
+
+			tasks = append(tasks, func() error {
+				n := 1_409_305_684_859
+				for i := 2; i < n; i++ {
+					if n%i == 0 {
+						return nil
+					}
+				}
+				return nil
+			})
+		}
+		workersCount := 10
+		maxErrorsCount := 1
+
+		oneWorker := make(chan struct{})
+		manyWorkers := make(chan struct{})
+		go func() {
+			Run(tasks, 1, maxErrorsCount)
+			oneWorker <- struct{}{}
+		}()
+		go func() {
+			Run(tasks, workersCount, maxErrorsCount)
+			manyWorkers <- struct{}{}
+		}()
+
+		select {
+		case <-oneWorker:
+			<-manyWorkers
+			require.FailNow(t, "Single-threaded mode is faster than multi-threaded mode.")
+		case <-manyWorkers:
+			<-oneWorker
+		}
+	})
 }
