@@ -14,7 +14,7 @@ const (
 	minPort = 0
 	maxPort = 65535
 
-	defaultTimeout = time.Duration(10 * time.Second)
+	defaultTimeout = 10 * time.Second
 
 	errorReturnCode = 1
 )
