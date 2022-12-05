@@ -36,7 +36,6 @@ func TestRunConcurrency(t *testing.T) {
 
 		go Run(tasks, workerCount, maxErrorsCount)
 		require.Eventually(t, conditionConcurrencyFunc, time.Second, time.Millisecond)
-
 	})
 }
 
@@ -124,6 +123,7 @@ func TestRunZeroWorkers(t *testing.T) {
 		require.ErrorIs(t, err, ErrNoWorkers)
 	})
 }
+
 func TestRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
