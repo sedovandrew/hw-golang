@@ -12,6 +12,118 @@ import (
 	"go.uber.org/goleak"
 )
 
+func TestRunConcurrency(t *testing.T) {
+	t.Run("concurrency", func(t *testing.T) {
+		tasksCount := 50
+		workerCount := 5
+		maxErrorsCount := 1
+		tasks := make([]Task, 0, tasksCount)
+
+		var runningTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				atomic.AddInt32(&runningTasksCount, 1)
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runningTasksCount, -1)
+				return nil
+			})
+		}
+
+		conditionConcurrencyFunc := func() bool {
+			return atomic.LoadInt32(&runningTasksCount) == int32(workerCount)
+		}
+
+		go Run(tasks, workerCount, maxErrorsCount)
+		require.Eventually(t, conditionConcurrencyFunc, time.Second, time.Millisecond)
+
+	})
+}
+
+func TestRunZeroErrors(t *testing.T) {
+	t.Run("no_errors", func(t *testing.T) {
+		tasksCount := 10
+		workerCount := 2
+		maxErrorsCount := 0
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		err := Run(tasks, workerCount, maxErrorsCount)
+		require.NoError(t, err)
+	})
+
+	t.Run("all_errors", func(t *testing.T) {
+		tasksCount := 10
+		workerCount := 2
+		maxErrorsCount := 0
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			err := fmt.Errorf("error from task %d", i)
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return err
+			})
+		}
+
+		err := Run(tasks, workerCount, maxErrorsCount)
+		require.NoError(t, err)
+	})
+}
+
+func TestRunZeroWorkers(t *testing.T) {
+	t.Run("zero_workers", func(t *testing.T) {
+		tasksCount := 10
+		workerCount := 0
+		maxErrorsCount := 3
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		err := Run(tasks, workerCount, maxErrorsCount)
+		require.ErrorIs(t, err, ErrNoWorkers)
+	})
+
+	t.Run("negative_number_workers", func(t *testing.T) {
+		tasksCount := 10
+		workerCount := -1
+		maxErrorsCount := 1
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		err := Run(tasks, workerCount, maxErrorsCount)
+		require.ErrorIs(t, err, ErrNoWorkers)
+	})
+}
 func TestRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
